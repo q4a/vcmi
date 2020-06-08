@@ -21,7 +21,7 @@ InputVariable: scoutTurnDistance
 InputVariable: goldReward
   description: estimated amount of gold received
   enabled: true
-  range: -0.010 5000.000
+  range: 0.000 5000.000
   lock-range: true
   term: LOW Triangle 10.000 500.000 2000.000
   term: MEDIUM Triangle 500.000 2000.000 5000.000
@@ -30,7 +30,7 @@ InputVariable: goldReward
   term: LOWEST Triangle 0.000 100.000 500.000
 InputVariable: armyReward
   enabled: true
-  range: 0.000 10000.000
+  range: -0.010 10000.000
   lock-range: false
   term: NONE Ramp 100.000 0.000
   term: LOW Triangle 0.000 700.000 3000.000
@@ -51,7 +51,7 @@ InputVariable: heroRole
   term: MAIN Rectangle 0.500 1.500
 InputVariable: danger
   enabled: true
-  range: -0.010 10000.000
+  range: 0.010 10000.000
   lock-range: false
   term: NONE Ramp 20.000 0.000
   term: LOW Triangle 50.000 1000.000 2000.000
@@ -176,12 +176,11 @@ RuleBlock: gold reward
   rule: if goldReward is LOW and heroRole is MAIN and danger is NONE and rewardType is SINGLE then Value is LOW
   rule: if goldReward is LOWEST and heroRole is MAIN and danger is NONE and rewardType is SINGLE then Value is LOWEST
   rule: if armyReward is HIGH and heroRole is SCOUT and danger is not NONE and armyLoss is LOW then Value is HIGH with 0.5
-  rule: if armyReward is HIGH and heroRole is SCOUT and danger is NONE and rewardType is SINGLE then Value is HIGHEST
-  rule: if armyReward is HIGH and heroRole is SCOUT and danger is NONE and rewardType is MIXED then Value is HIGH with 0.7
-  rule: if armyReward is HIGH and heroRole is MAIN and danger is NONE and mainTurnDistance is LOW then Value is HIGHEST with 0.7
-  rule: if armyReward is HIGH and heroRole is MAIN and danger is NONE and mainTurnDistance is MEDIUM then Value is HIGH with 0.5
-  rule: if armyReward is HIGH and heroRole is MAIN and danger is not NONE and armyLoss is LOW then Value is HIGHEST with 0.7
-  rule: if armyReward is HIGH and turn is NOW and heroRole is MAIN then Value is HIGHEST
+  rule: if armyReward is HIGH and heroRole is SCOUT and danger is NONE then Value is HIGHEST
+  rule: if armyReward is HIGH and heroRole is MAIN and rewardType is MIXED and armyLoss is LOW then Value is HIGHEST
+  rule: if armyReward is HIGH and heroRole is MAIN and rewardType is SINGLE and mainTurnDistance is LOWEST then Value is HIGHEST
+  rule: if armyReward is HIGH and heroRole is MAIN and rewardType is SINGLE and danger is NONE then Value is HIGH
+  rule: if armyReward is HIGH and heroRole is MAIN and rewardType is SINGLE and danger is not NONE and armyLoss is LOW then Value is HIGHEST
   rule: if armyReward is MEDIUM and heroRole is MAIN and danger is not NONE and armyLoss is LOW then Value is HIGHEST with 0.5
   rule: if armyReward is MEDIUM and heroRole is MAIN and danger is NONE then Value is BITHIGH
   rule: if armyReward is MEDIUM and heroRole is MAIN and danger is NONE and mainTurnDistance is LOWEST then Value is HIGH with 0.2
@@ -195,9 +194,9 @@ RuleBlock: gold reward
   rule: if skillReward is HIGH and heroRole is MAIN and armyLoss is LOW then Value is HIGH
   rule: if strategicalValue is LOW and heroRole is MAIN and armyLoss is LOW then Value is BITLOW
   rule: if strategicalValue is LOWEST and heroRole is MAIN and armyLoss is LOW then Value is LOW
-  rule: if strategicalValue is LOW and heroRole is SCOUT and armyLoss is LOW then Value is HIGH
-  rule: if strategicalValue is HIGH and heroRole is SCOUT and danger is NONE then Value is HIGHEST
+  rule: if strategicalValue is LOW and heroRole is SCOUT and armyLoss is LOW then Value is HIGH with 0.5
   rule: if strategicalValue is MEDIUM and heroRole is SCOUT and danger is NONE then Value is HIGH
+  rule: if strategicalValue is HIGH and heroRole is SCOUT and danger is NONE then Value is HIGHEST with 0.5
   rule: if strategicalValue is HIGH and heroRole is MAIN and armyLoss is LOW then Value is HIGHEST
   rule: if strategicalValue is HIGH and heroRole is MAIN and armyLoss is MEDIUM then Value is HIGH
   rule: if strategicalValue is MEDIUM and heroRole is MAIN and armyLoss is LOW then Value is HIGH
