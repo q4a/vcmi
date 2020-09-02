@@ -24,6 +24,7 @@ class CCreature;
 class DLL_LINKAGE CCreature : public CBonusSystemNode
 {
 public:
+	static bool DisableChildLinkage;
 	std::string identifier;
 
 	std::string nameRef; // reference name, stringID
@@ -188,6 +189,8 @@ public:
 
 private:
 	void fillWarMachine();
+	virtual void newChildAttached(CBonusSystemNode *child) override;
+	virtual void childDetached(CBonusSystemNode *child) override;
 };
 
 class DLL_LINKAGE CCreatureHandler : public IHandlerBase

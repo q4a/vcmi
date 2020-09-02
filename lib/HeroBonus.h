@@ -811,8 +811,8 @@ public:
 	virtual void addNewBonus(const std::shared_ptr<Bonus>& b);
 	void accumulateBonus(const std::shared_ptr<Bonus>& b); //add value of bonus with same type/subtype or create new
 
-	void newChildAttached(CBonusSystemNode *child);
-	void childDetached(CBonusSystemNode *child);
+	virtual void newChildAttached(CBonusSystemNode *child);
+	virtual void childDetached(CBonusSystemNode *child);
 	void propagateBonus(std::shared_ptr<Bonus> b);
 	void unpropagateBonus(std::shared_ptr<Bonus> b);
 	void removeBonus(const std::shared_ptr<Bonus>& b);
