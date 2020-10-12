@@ -118,11 +118,11 @@ struct DLL_LINKAGE CGPathNode
 		{
 			if(getUpNode)
 			{
-				pq->increase(this->pqHandle, this);
+				pq->increase(this->pqHandle);
 			}
 			else
 			{
-				pq->decrease(this->pqHandle, this);
+				pq->decrease(this->pqHandle);
 			}
 		}
 	}
@@ -149,22 +149,13 @@ struct DLL_LINKAGE CGPathNode
 		return turns < 255;
 	}
 
-	boost::heap::detail::node_handle
-	<
-		boost::heap::detail::marked_heap_node<CGPathNode *>*,
-		boost::heap::detail::make_fibonacci_heap_base
-		<
-			CGPathNode *,
-			boost::parameter::aux::arg_list
-			<
-				boost::heap::compare<NodeComparer<CGPathNode>>,
-				boost::parameter::aux::empty_arg_list
-			>
-		>::type,
-		CGPathNode *&
-	> pqHandle;
+	typedef boost::heap::fibonacci_heap<
+		CGPathNode *,
+		boost::heap::compare<NodeComparer<CGPathNode>>
+	> TFibHeap;
 
-	boost::heap::fibonacci_heap< CGPathNode *, boost::heap::compare<NodeComparer<CGPathNode>> >* pq;
+	TFibHeap::handle_type pqHandle;
+	TFibHeap* pq;
 
 private:
 	float cost; //total cost of the path to this tile measured in turns with fractions
@@ -519,12 +510,12 @@ struct DLL_LINKAGE TurnInfo
 		bool waterWalking;
 		int waterWalkingVal;
 
-		BonusCache(TBonusListPtr bonusList);
+		BonusCache(TConstBonusListPtr bonusList);
 	};
 	std::unique_ptr<BonusCache> bonusCache;
 
 	const CGHeroInstance * hero;
-	TBonusListPtr bonuses;
+	TConstBonusListPtr bonuses;
 	mutable int maxMovePointsLand;
 	mutable int maxMovePointsWater;
 	int nativeTerrain;

@@ -556,13 +556,13 @@ GrowthInfo CGTownInstance::getGrowthInfo(int level) const
 		ret.entries.push_back(GrowthInfo::Entry(VLC->generaltexth->allTexts[591], dwellingBonus));// \nExternal dwellings %+d
 
 	//other *-of-legion-like bonuses (%d to growth cumulative with grail)
-	TBonusListPtr bonuses = getBonuses(Selector::type(Bonus::CREATURE_GROWTH).And(Selector::subtype(level)));
-	for(const std::shared_ptr<Bonus> b : *bonuses)
+	TConstBonusListPtr bonuses = getBonuses(Selector::type(Bonus::CREATURE_GROWTH).And(Selector::subtype(level)));
+	for(const auto & b : *bonuses)
 		ret.entries.push_back(GrowthInfo::Entry(b->val, b->Description()));
 
 	//statue-of-legion-like bonus: % to base+castle
-	TBonusListPtr bonuses2 = getBonuses(Selector::type(Bonus::CREATURE_GROWTH_PERCENT));
-	for(const std::shared_ptr<Bonus> b : *bonuses2)
+	TConstBonusListPtr bonuses2 = getBonuses(Selector::type(Bonus::CREATURE_GROWTH_PERCENT));
+	for(const auto & b : *bonuses2)
 		ret.entries.push_back(GrowthInfo::Entry(b->val * (base + castleBonus) / 100, b->Description()));
 
 	if(hasBuilt(BuildingID::GRAIL)) //grail - +50% to ALL (so far added) growth
@@ -798,6 +798,14 @@ void CGTownInstance::newTurn(CRandomGenerator & rand) const
 				cb->setObjProperty (id, ObjProperty::STRUCTURE_CLEAR_VISITORS, (elem)->id); //reset visitors for Mana Vortex
 		}
 
+		//get Mana Vortex or Stables bonuses
+		//same code is in the CGameHandler::buildStructure method
+		if (visitingHero != nullptr)
+			cb->visitCastleObjects(this, visitingHero);
+
+		if (garrisonHero != nullptr)
+			cb->visitCastleObjects(this, garrisonHero);
+
 		if (tempOwner == PlayerColor::NEUTRAL) //garrison growth for neutral towns
 			{
 				std::vector<SlotID> nativeCrits; //slots
@@ -901,7 +909,7 @@ void CGTownInstance::mergeGarrisonOnSiege() const
 		return SlotID();
 	};
 
-	int count = stacks.size();
+	int count = static_cast<int>(stacks.size());
 	for(int i = 0; i < count; i++)
 	{
 		auto pair = *vstd::maxElementByFun(stacks, [&](std::pair<SlotID, CStackInstance *> elem)
@@ -918,7 +926,7 @@ void CGTownInstance::mergeGarrisonOnSiege() const
 			cb->moveStack(StackLocation(this, pair.first), StackLocation(visitingHero, dst), -1);
 		else
 		{
-			dst = getWeakestStackSlot(pair.second->getPower());
+			dst = getWeakestStackSlot(static_cast<int>(pair.second->getPower()));
 			if(dst.validSlot())
 				cb->swapStacks(StackLocation(this, pair.first), StackLocation(visitingHero, dst));
 		}
@@ -1240,7 +1248,7 @@ const CTown * CGTownInstance::getTown() const
 int CGTownInstance::getTownLevel() const
 {
 	// count all buildings that are not upgrades
-	return boost::range::count_if(builtBuildings, [&](const BuildingID & build)
+	return (int)boost::range::count_if(builtBuildings, [&](const BuildingID & build)
 	{
 		return town->buildings.at(build) && town->buildings.at(build)->upgrade == -1;
 	});
@@ -1494,7 +1502,7 @@ COPWBonus::COPWBonus (BuildingID index, CGTownInstance *TOWN)
 {
 	ID = index;
 	town = TOWN;
-	id = town->bonusingBuildings.size();
+	id = static_cast<si32>(town->bonusingBuildings.size());
 }
 void COPWBonus::setProperty(ui8 what, ui32 val)
 {
@@ -1536,13 +1544,15 @@ void COPWBonus::onHeroVisit (const CGHeroInstance * h) const
 				}
 				break;
 			case ETownType::DUNGEON: //Mana Vortex
-				if (visitors.empty() && h->mana <= h->manaLimit() * 2)
+				if (visitors.empty())
 				{
-					cb->setManaPoints (heroID, 2 * h->manaLimit());
+					if (h->mana < h->manaLimit() * 2)
+						cb->setManaPoints(heroID, 2 * h->manaLimit());
 					//TODO: investigate line below
 					//cb->setObjProperty (town->id, ObjProperty::VISITED, true);
 					iw.text << VLC->generaltexth->allTexts[579];
 					cb->showInfoDialog(&iw);
+					//extra visit penalty if hero alredy had double mana points (or even more?!)
 					town->addHeroToStructureVisitors(h, id);
 				}
 				break;
@@ -1553,7 +1563,7 @@ CTownBonus::CTownBonus (BuildingID index, CGTownInstance *TOWN)
 {
 	ID = index;
 	town = TOWN;
-	id = town->bonusingBuildings.size();
+	id = static_cast<si32>(town->bonusingBuildings.size());
 }
 void CTownBonus::setProperty (ui8 what, ui32 val)
 {
@@ -1593,7 +1603,7 @@ void CTownBonus::onHeroVisit (const CGHeroInstance * h) const
 						break;
 					case ETownType::DUNGEON://academy of battle scholars
 						what = PrimarySkill::EXPERIENCE;
-						val = h->calculateXp(1000);
+						val = static_cast<int>(h->calculateXp(1000));
 						mid = 583;
 						iw.components.push_back (Component(Component::EXPERIENCE, 0, val, 0));
 						break;
