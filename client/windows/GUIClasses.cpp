@@ -1269,7 +1269,18 @@ CUniversityWindow::CUniversityWindow(const CGHeroInstance * _hero, const IMarket
 	bars->preload();
 
 	if(market->o->ID == Obj::TOWN)
-		titlePic = std::make_shared<CAnimImage>(CGI->townh->factions[ETownType::CONFLUX]->town->clientInfo.buildingsIcons, BuildingID::MAGIC_UNIVERSITY);
+	{
+		auto town = dynamic_cast<const CGTownInstance *>(_market);
+
+		if(town)
+		{
+			auto faction = town->town->faction->index;
+			auto bid = town->town->getSpecialBuilding(BuildingSubID::MAGIC_UNIVERSITY)->bid;
+			titlePic = std::make_shared<CAnimImage>(CGI->townh->factions[faction]->town->clientInfo.buildingsIcons, bid);
+		}
+		else
+			titlePic = std::make_shared<CAnimImage>(CGI->townh->factions[ETownType::CONFLUX]->town->clientInfo.buildingsIcons, BuildingID::MAGIC_UNIVERSITY);
+	}
 	else
 		titlePic = std::make_shared<CPicture>("UNIVBLDG");
 
@@ -1781,9 +1792,6 @@ void CObjectListWindow::init(std::shared_ptr<CIntObject> titleWidget_, std::stri
 
 	title = std::make_shared<CLabel>(152, 27, FONT_BIG, CENTER, Colors::YELLOW, _title);
 	descr = std::make_shared<CLabel>(145, 133, FONT_SMALL, CENTER, Colors::WHITE, _descr);
-
-	ok = std::make_shared<CButton>(Point(15, 402), "IOKAY.DEF", CButton::tooltip(), std::bind(&CObjectListWindow::elementSelected, this), SDLK_RETURN);
-	ok->block(true);
 	exit = std::make_shared<CButton>( Point(228, 402), "ICANCEL.DEF", CButton::tooltip(), std::bind(&CObjectListWindow::exitPressed, this), SDLK_ESCAPE);
 
 	if(titleWidget)
@@ -1796,6 +1804,9 @@ void CObjectListWindow::init(std::shared_ptr<CIntObject> titleWidget_, std::stri
 	list = std::make_shared<CListBox>(std::bind(&CObjectListWindow::genItem, this, _1),
 		Point(14, 151), Point(0, 25), 9, items.size(), 0, 1, Rect(262, -32, 256, 256) );
 	list->type |= REDRAW_PARENT;
+
+	ok = std::make_shared<CButton>(Point(15, 402), "IOKAY.DEF", CButton::tooltip(), std::bind(&CObjectListWindow::elementSelected, this), SDLK_RETURN);
+	ok->block(!list->size());
 }
 
 std::shared_ptr<CIntObject> CObjectListWindow::genItem(size_t index)

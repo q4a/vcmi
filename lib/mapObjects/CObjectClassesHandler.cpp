@@ -193,9 +193,30 @@ void CObjectClassesHandler::loadObjectEntry(const std::string & identifier, cons
 	}
 
 	logGlobal->debug("Loaded object %s(%d)::%s(%d)", obj->identifier, obj->id, convertedId, id);
-	assert(!obj->subObjects.count(id)); // DO NOT override
-	obj->subObjects[id] = handler;
-	obj->subIds[convertedId] = id;
+
+	//some mods redefine content handlers in the decoration.json in such way:
+	//"core:sign" : { "types" : { "forgeSign" : { ...
+	static const std::vector<std::string> knownProblemObjects
+	{
+		"hota.hota decorations:hotaPandoraBox"
+		, "hota.hota decorations:hotaSubterreanGate"
+	};
+	bool overrideForce = !obj->subObjects.count(id) ||
+	std::any_of(knownProblemObjects.begin(), knownProblemObjects.end(), [obj, id](const std::string & str)
+	{
+		return str.compare(obj->subObjects[id]->subTypeName) == 0;
+	});
+
+	if (overrideForce) // DO NOT override mod handlers by default
+	{
+		obj->subObjects[id] = handler;
+		obj->subIds[convertedId] = id;
+	}
+	else
+	{
+		logGlobal->warn("Don't override handler %s in object %s(%d)::%s(%d) subTypeName : %s"
+			, obj->handlerName, obj->identifier, obj->id, convertedId, id, obj->subObjects[id]->subTypeName);
+	}
 }
 
 CObjectClassesHandler::ObjectContainter * CObjectClassesHandler::loadFromJson(const JsonNode & json, const std::string & name)
@@ -209,7 +230,7 @@ CObjectClassesHandler::ObjectContainter * CObjectClassesHandler::loadFromJson(co
 	if(json["defaultAiValue"].isNull())
 		obj->groupDefaultAiValue = boost::none;
 	else
-		obj->groupDefaultAiValue = static_cast<si32>(json["defaultAiValue"].Integer());
+		obj->groupDefaultAiValue = static_cast<boost::optional<si32>>(json["defaultAiValue"].Integer());
 
 	for (auto entry : json["types"].Struct())
 	{
@@ -470,7 +491,7 @@ void AObjectTypeHandler::init(const JsonNode & input, boost::optional<std::strin
 	if(input["aiValue"].isNull())
 		aiValue = boost::none;
 	else
-		aiValue = static_cast<si32>(input["aiValue"].Integer());
+		aiValue = static_cast<boost::optional<si32>>(input["aiValue"].Integer());
 
 	initTypeData(input);
 }

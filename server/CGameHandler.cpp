@@ -1808,11 +1808,11 @@ void CGameHandler::newTurn()
 		handleTownEvents(t, n);
 		if (newWeek) //first day of week
 		{
-			if (t->hasBuilt(BuildingID::PORTAL_OF_SUMMON, ETownType::DUNGEON))
+			if (t->hasBuilt(BuildingSubID::PORTAL_OF_SUMMONING))
 				setPortalDwelling(t, true, (n.specialWeek == NewTurn::PLAGUE ? true : false)); //set creatures for Portal of Summoning
 
 			if (!firstTurn)
-				if (t->hasBuilt(BuildingID::TREASURY, ETownType::RAMPART) && player < PlayerColor::PLAYER_LIMIT)
+				if (t->hasBuilt(BuildingSubID::TREASURY) && player < PlayerColor::PLAYER_LIMIT)
 						n.res[player][Res::GOLD] += hadGold.at(player)/10; //give 10% of starting gold
 
 			if (!vstd::contains(n.cres, t->id))
@@ -2361,9 +2361,14 @@ bool CGameHandler::teleportHero(ObjectInstanceID hid, ObjectInstanceID dstid, ui
 	const CGTownInstance *from = h->visitedTown;
 	if (((h->getOwner() != t->getOwner())
 		&& complain("Cannot teleport hero to another player"))
-	|| ((!from || !from->hasBuilt(BuildingID::CASTLE_GATE, ETownType::INFERNO))
+
+	|| (from->town->faction->index != t->town->faction->index
+		&& complain("Source town and destination town should belong to the same faction"))
+
+	|| ((!from || !from->hasBuilt(BuildingSubID::CASTLE_GATE))
 		&& complain("Hero must be in town with Castle gate for teleporting"))
-	|| (!t->hasBuilt(BuildingID::CASTLE_GATE, ETownType::INFERNO)
+
+	|| (!t->hasBuilt(BuildingSubID::CASTLE_GATE)
 		&& complain("Cannot teleport hero to town without Castle gate in it")))
 			return false;
 	int3 pos = t->visitablePos();
@@ -2386,7 +2391,7 @@ void CGameHandler::setOwner(const CGObjectInstance * obj, PlayerColor owner)
 	{
 		if (owner < PlayerColor::PLAYER_LIMIT) //new owner is real player
 		{
-			if (town->hasBuilt(BuildingID::PORTAL_OF_SUMMON, ETownType::DUNGEON))
+			if (town->hasBuilt(BuildingSubID::PORTAL_OF_SUMMONING))
 				setPortalDwelling(town, true, false);
 		}
 
@@ -2409,7 +2414,7 @@ void CGameHandler::setOwner(const CGObjectInstance * obj, PlayerColor owner)
 	{
 		for (const CGTownInstance * t : getPlayer(owner)->towns)
 		{
-			if (t->hasBuilt(BuildingID::PORTAL_OF_SUMMON, ETownType::DUNGEON))
+			if (t->hasBuilt(BuildingSubID::PORTAL_OF_SUMMONING))
 				setPortalDwelling(t);//set initial creatures for all portals of summoning
 		}
 	}
@@ -2511,15 +2516,13 @@ void CGameHandler::heroVisitCastle(const CGTownInstance * obj, const CGHeroInsta
 	sendAndApply(&vc);
 	visitCastleObjects(obj, hero);
 	giveSpells(obj, hero);
-
 	checkVictoryLossConditionsForPlayer(hero->tempOwner); //transported artifact?
 }
 
 void CGameHandler::visitCastleObjects(const CGTownInstance * t, const CGHeroInstance * h)
 {
-	std::vector<CGTownBuilding*>::const_iterator i;
-	for (i = t->bonusingBuildings.begin(); i != t->bonusingBuildings.end(); i++)
-		(*i)->onHeroVisit (h);
+	for (auto building : t->bonusingBuildings)
+		building->onHeroVisit(h);
 }
 
 void CGameHandler::stopHeroVisitCastle(const CGTownInstance * obj, const CGHeroInstance * hero)
@@ -3073,7 +3076,7 @@ bool CGameHandler::buildStructure(ObjectInstanceID tid, BuildingID requestedID, 
 			ssi.creatures[level].second.push_back(crea->idNumber);
 			sendAndApply(&ssi);
 		}
-		if (t->subID == ETownType::DUNGEON && buildingID == BuildingID::PORTAL_OF_SUMMON)
+		if (t->town->buildings.at(buildingID)->subId == BuildingSubID::PORTAL_OF_SUMMONING)
 		{
 			setPortalDwelling(t);
 		}
@@ -3082,9 +3085,11 @@ bool CGameHandler::buildStructure(ObjectInstanceID tid, BuildingID requestedID, 
 	//Performs stuff that has to be done after new building is built
 	auto processAfterBuiltStructure = [t, this](const BuildingID buildingID)
 	{
-		if (buildingID <= BuildingID::MAGES_GUILD_5 || //it's mage guild
-			(t->subID == ETownType::TOWER && buildingID == BuildingID::LIBRARY) ||
-			(t->subID == ETownType::CONFLUX && buildingID == BuildingID::GRAIL))
+		auto isMageGuild = (buildingID <= BuildingID::MAGES_GUILD_5 && buildingID >= BuildingID::MAGES_GUILD_1);
+		auto isLibrary = isMageGuild ? false 
+			: t->town->buildings.at(buildingID)->subId == BuildingSubID::EBuildingSubID::LIBRARY;
+
+		if(isMageGuild || isLibrary || (t->subID == ETownType::CONFLUX && buildingID == BuildingID::GRAIL))
 		{
 			if (t->visitingHero)
 				giveSpells(t,t->visitingHero);
@@ -3536,7 +3541,7 @@ bool CGameHandler::buyArtifact(ObjectInstanceID hid, ArtifactID aid)
 		COMPLAIN_RET_FALSE_IF(getPlayer(hero->getOwner())->resources.at(Res::GOLD) < price, "Not enough gold!");
 
 		if  ((town->hasBuilt(BuildingID::BLACKSMITH) && town->town->warMachine == aid)
-		 || ((town->hasBuilt(BuildingID::BALLISTA_YARD, ETownType::STRONGHOLD)) && aid == ArtifactID::BALLISTA))
+		 || (town->hasBuilt(BuildingSubID::BALLISTA_YARD) && aid == ArtifactID::BALLISTA))
 		{
 			giveResource(hero->getOwner(),Res::GOLD,-price);
 			return giveHeroNewArtifact(hero, art);
@@ -3830,7 +3835,7 @@ bool CGameHandler::hireHero(const CGObjectInstance *obj, ui8 hid, PlayerColor pl
 	if (t)
 	{
 		visitCastleObjects(t, nh);
-		giveSpells (t,nh);
+		giveSpells(t,nh);
 	}
 	return true;
 }
@@ -3843,8 +3848,18 @@ bool CGameHandler::queryReply(QueryID qid, const JsonNode & answer, PlayerColor 
 	logGlobal->trace(answer.toJson());
 
 	auto topQuery = queries.topQuery(player);
+
 	COMPLAIN_RET_FALSE_IF(!topQuery, "This player doesn't have any queries!");
-	COMPLAIN_RET_FALSE_IF(topQuery->queryID != qid, "This player top query has different ID!");
+
+	if(topQuery->queryID != qid)
+	{
+		auto currentQuery = queries.getQuery(qid);
+
+		if(currentQuery != nullptr && currentQuery->endsByPlayerAnswer())
+			currentQuery->setReply(answer);
+
+		COMPLAIN_RET("This player top query has different ID!"); //topQuery->queryID != qid
+	}
 	COMPLAIN_RET_FALSE_IF(!topQuery->endsByPlayerAnswer(), "This query cannot be ended by player's answer!");
 
 	topQuery->setReply(answer);
