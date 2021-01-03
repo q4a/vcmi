@@ -902,8 +902,7 @@ TConstBonusListPtr CBonusSystemNode::getAllBonuses(const CSelector &selector, co
 	if (CBonusSystemNode::cachingEnabled && limitOnUs)
 	{
 		// Exclusive access for one thread
-		static boost::mutex m;
-		boost::mutex::scoped_lock lock(m);
+		std::lock_guard<std::mutex> lock(sync);
 
 		// If the bonus system tree changes(state of a single node or the relations to each other) then
 		// cache all bonus objects. Selector objects doesn't matter.
@@ -994,7 +993,8 @@ CBonusSystemNode::CBonusSystemNode()
 	: bonuses(true),
 	exportedBonuses(true),
 	nodeType(UNKNOWN),
-	cachedLast(0)
+	cachedLast(0),
+	sync()
 {
 }
 
@@ -1002,7 +1002,8 @@ CBonusSystemNode::CBonusSystemNode(ENodeTypes NodeType)
 	: bonuses(true),
 	exportedBonuses(true),
 	nodeType(NodeType),
-	cachedLast(0)
+	cachedLast(0),
+	sync()
 {
 }
 
@@ -1011,7 +1012,8 @@ CBonusSystemNode::CBonusSystemNode(CBonusSystemNode && other):
 	exportedBonuses(std::move(other.exportedBonuses)),
 	nodeType(other.nodeType),
 	description(other.description),
-	cachedLast(0)
+	cachedLast(0),
+	sync()
 {
 	std::swap(parents, other.parents);
 	std::swap(children, other.children);
@@ -1190,7 +1192,6 @@ void CBonusSystemNode::childDetached(CBonusSystemNode *child)
 		logBonus->error("Error! %s #cannot be detached from# %s", child->nodeName(), nodeName());
 		throw std::runtime_error("internal error");
 	}
-
 }
 
 void CBonusSystemNode::detachFromAll()

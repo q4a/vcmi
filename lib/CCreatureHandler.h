@@ -132,6 +132,8 @@ public:
 	void setId(CreatureID ID); //assigns idNumber and updates bonuses to reference it
 	void addBonus(int val, Bonus::BonusType type, int subtype = -1);
 	std::string nodeName() const override;
+	void newChildAttached(CBonusSystemNode *child) override;
+	void childDetached(CBonusSystemNode *child) override;
 
 	template<typename RanGen>
 	int getRandomAmount(RanGen ranGen) const
@@ -189,8 +191,6 @@ public:
 
 private:
 	void fillWarMachine();
-	virtual void newChildAttached(CBonusSystemNode *child) override;
-	virtual void childDetached(CBonusSystemNode *child) override;
 };
 
 class DLL_LINKAGE CCreatureHandler : public IHandlerBase
