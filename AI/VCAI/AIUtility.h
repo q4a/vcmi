@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <type_traits>
+#include <tbb/tbb.h>
 #include "../../lib/VCMI_Lib.h"
 #include "../../lib/CBuildingHandler.h"
 #include "../../lib/CCreatureHandler.h"
@@ -18,7 +20,6 @@
 #include "../../lib/mapObjects/CObjectHandler.h"
 #include "../../lib/mapObjects/CGHeroInstance.h"
 #include "../../lib/CPathfinder.h"
-#include <tbb/tbb.h>
 
 using namespace tbb;
 
@@ -258,13 +259,13 @@ public:
 	
 	void add(std::unique_ptr<T> t)
 	{
-		std::lock_guard<std::mutex> lock(sync);
+		boost::lock_guard<boost::mutex> lock(sync);
 		pool.push_back(std::move(t));
 	}
 
 	ptr_type acquire()
 	{
-		std::lock_guard<std::mutex> lock(sync);
+		boost::lock_guard<boost::mutex> lock(sync);
 		bool poolIsEmpty = pool.empty();
 		T * element = poolIsEmpty
 			? elementFactory().release()
@@ -293,5 +294,5 @@ private:
 	std::vector<std::unique_ptr<T>> pool;
 	std::function<std::unique_ptr<T>()> elementFactory;
 	std::shared_ptr<SharedPool<T> *> instance_tracker;
-	std::mutex sync;
+	boost::mutex sync;
 };
