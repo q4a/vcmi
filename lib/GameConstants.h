@@ -297,7 +297,7 @@ class TeleportChannelID : public BaseForID<TeleportChannelID, si32>
 // Enum declarations
 namespace PrimarySkill
 {
-	enum PrimarySkill { ATTACK, DEFENSE, SPELL_POWER, KNOWLEDGE,
+	enum PrimarySkill { NONE = -1, ATTACK, DEFENSE, SPELL_POWER, KNOWLEDGE,
 				EXPERIENCE = 4}; //for some reason changePrimSkill uses it
 }
 
@@ -452,7 +452,8 @@ namespace BuildingSubID
 		KNOWLEDGE_VISITING_BONUS,
 		EXPERIENCE_VISITING_BONUS,
 		LIGHTHOUSE,
-		TREASURY
+		TREASURY,
+		CUSTOM_VISITING_BONUS
 	};
 }
 
@@ -860,8 +861,9 @@ class DLL_LINKAGE ETerrainType
 public:
 	enum EETerrainType
 	{
+		ANY_TERRAIN = -3,
 		WRONG = -2, BORDER = -1, DIRT, SAND, GRASS, SNOW, SWAMP,
-		ROUGH, SUBTERRANEAN, LAVA, WATER, ROCK
+		ROUGH, SUBTERRANEAN, LAVA, WATER, ROCK // ROCK is also intended to be max value.
 	};
 
 	ETerrainType(EETerrainType _num = WRONG) : num(_num)
